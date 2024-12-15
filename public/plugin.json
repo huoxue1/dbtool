@@ -1,0 +1,12 @@
+{
+  "main": "http://127.0.0.1:8000",
+  "preload": "preload.js",
+  "logo": "logo.png",
+  "features": [
+    {
+      "code": "dbtool",
+      "explain": "dbtool",
+      "cmds": ["dbtool", "mysql", "mongodb"]
+    }
+  ]
+}
