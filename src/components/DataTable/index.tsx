@@ -1,9 +1,10 @@
-import React, { useEffect } from 'react';
-import { Table, Card, Form, Input, Button, Space, Select, Input as AntdInput, Pagination } from 'antd';
+import React, { useEffect, useState } from 'react';
+import { Table, Card, Form, Input, Button, Space, Select, Input as AntdInput, Pagination, Drawer, message } from 'antd';
 import type { TableProps } from 'antd';
 import { SearchOutlined, ReloadOutlined, DownloadOutlined } from '@ant-design/icons';
 import { useDispatch, useSelector } from '@umijs/max';
 import styles from './index.less';
+import Export from './export';
 
 const { TextArea } = AntdInput;
 const { Option } = Select;
@@ -18,6 +19,7 @@ const DataTable: React.FC<DataTableProps> = ({ connectionName, dbName, tableName
   const dispatch = useDispatch();
   const [form] = Form.useForm();
   const { data, columns, pagination, loading, displayMode } = useSelector((state: any) => state.table);
+  const [exportDrawerVisible, setExportDrawerVisible] = useState(false);
 
   const fetchData = (
     page: number = pagination.current,
@@ -64,19 +66,7 @@ const DataTable: React.FC<DataTableProps> = ({ connectionName, dbName, tableName
   };
 
   const handleExport = () => {
-    const content = displayMode === 'table' 
-      ? JSON.stringify(data, null, 2)
-      : data;
-      
-    const blob = new Blob([JSON.stringify(content, null, 2)], { type: 'application/json' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `${tableName}_export.json`;
-    document.body.appendChild(a);
-    a.click();
-    URL.revokeObjectURL(url);
-    document.body.removeChild(a);
+    setExportDrawerVisible(true);
   };
 
   const renderDataContent = () => {
@@ -162,6 +152,39 @@ const DataTable: React.FC<DataTableProps> = ({ connectionName, dbName, tableName
       </Card>
 
       {renderDataContent()}
+
+      <Drawer
+        title="导出数据"
+        placement="right"
+        width={400}
+        onClose={() => setExportDrawerVisible(false)}
+        open={exportDrawerVisible}
+      >
+        <Export
+          tableName={tableName}
+          onExport={async (type, path) => {
+            try {
+              await dispatch({
+                type: 'table/exportData',
+                payload: {
+                  type,
+                  path,
+                  connectionName,
+                  dbName,
+                  tableName,
+                  data,
+                  where: form.getFieldValue('where')
+                }
+              });
+              message.success('导出成功');
+              setExportDrawerVisible(false);
+            } catch (error) {
+              message.error('导出失败: ' + error.message);
+            }
+          }}
+          onCancel={() => setExportDrawerVisible(false)}
+        />
+      </Drawer>
     </div>
   );
 };
